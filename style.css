@@ -1,0 +1,155 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: "Segoe UI", Arial, sans-serif;
+    background-color: #eef2f7;
+    color: #1f2933;
+}
+
+header, footer {
+    margin: 0;
+    padding: 20px;
+    text-align: center;
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-weight: 600;
+    font-size: 1.2rem;
+}
+
+header h1 {
+    margin: 0 0 6px;
+}
+
+header p {
+    margin: 0;
+    color: #52606d;
+}
+
+main {
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+    font-family: "Segoe UI", Arial, sans-serif;
+}
+
+/* Bloco principal que organiza tudo */
+.calculadora {
+    width: 100%;
+    max-width: 460px;
+    margin: 0 auto;
+    padding: 24px;
+    background-color: #ffffff;
+    border: 2px solid #66a7f8;
+    border-radius: 14px;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.1);
+}
+
+/* Cada tópico dentro do seu quadrado */
+.campo {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding: 14px;
+    background-color: #f8fafc;
+    border: 1px solid #66a7f8;
+    border-radius: 8px;
+    text-align: left;
+}
+
+.campo label {
+    font-weight: 600;
+}
+
+.campo input,
+.campo select {
+    width: 100%;
+    padding: 10px;
+    font-size: 1rem;
+    border: 1px solid #66a7f8;
+    border-radius: 6px;
+    background-color: #f8fafc;
+}
+
+.campo input:focus,
+.campo select:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+}
+
+/* Botão colorido e interativo */
+#calculate {
+    width: 100%;
+    padding: 12px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #ffffff;
+    background-color: #2563eb;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+}
+
+#calculate:hover {
+    background-color: #1d4ed8;
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.4);
+    transform: translateY(-2px);
+}
+
+#calculate:active {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+#calculate:focus-visible {
+    outline: 3px solid #93c5fd;
+    outline-offset: 2px;
+}
+
+/* Botão Limpar: mesmo formato do Calcular, na cor cinza */
+#clear {
+    width: 100%;
+    margin-top: 10px;
+    padding: 12px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #ffffff;
+    background-color: #6b7280;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+}
+
+#clear:hover {
+    background-color: #4b5563;
+    box-shadow: 0 4px 10px rgba(75, 85, 99, 0.4);
+    transform: translateY(-2px);
+}
+
+#clear:active {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+#clear:focus-visible {
+    outline: 3px solid #d1d5db;
+    outline-offset: 2px;
+}
+
+/* Área do resultado */
+#result {
+    margin-top: 16px;
+    padding: 14px;
+    min-height: 50px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-align: center;
+    background-color: #f8fafc;
+    border: 1px dashed #94a3b8;
+    border-radius: 8px;
+}

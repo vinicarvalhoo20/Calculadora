@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora Multifuncional</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>Calculadora Multifuncional</h1>
+        <p>Faça suas operações matemáticas de forma simples e rápida!</p>
+    </header>
+    <main>
+        <div class="calculadora">
+            <div class="campo">
+                <label for="num1">Digite o primeiro número:</label>
+                <input type="number" id="num1" placeholder="Digite o primeiro número">
+            </div>
+
+            <div class="campo">
+                <label for="num2">Digite o segundo número:</label>
+                <input type="number" id="num2" placeholder="Digite o segundo número">
+            </div>
+
+            <div class="campo">
+                <label for="operation">Escolha a operação:</label>
+                <select id="operation">
+                    <option value="">Nenhuma</option>
+                    <option value="add">Adição (+)</option>
+                    <option value="subtract">Subtração (-)</option>
+                    <option value="multiply">Multiplicação (×)</option>
+                    <option value="divide">Divisão (÷)</option>
+                    <option value="power">Potência (^)</option>
+                    <option value="sqrt">Raiz Quadrada (√)</option>
+                </select>
+            </div>
+
+            <button id="calculate">Calcular</button>
+            <button id="clear">Limpar</button>
+
+            <div id="result"></div>
+        </div>
+    </main>
+    <footer>
+        <p>Todos os direitos reservados. &copy; 2023 Calculadora Multifuncional</p>
+    </footer>
+    <script src="script.js"></script>
+</body>
+</html>
