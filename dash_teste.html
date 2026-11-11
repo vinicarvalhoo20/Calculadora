@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard de Testes - Calculadora Multifuncional</title>
+  <style>
+    :root {
+      --azul: #66a7f8; --claro: #f8fafc; --cinza: #6b7280;
+      --texto: #1f2937; --erro: #e45770; --borda: rgba(107, 114, 128, 0.25);
+      --trilho: rgba(107, 114, 128, 0.18);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    [hidden] { display: none !important; }
+    body { font-family: "Segoe UI", Roboto, Arial, sans-serif; color: var(--cinza); background: var(--claro); }
+
+    /* ---------- Topo ---------- */
+    .topo { display: flex; align-items: center; flex-wrap: wrap; gap: 14px 28px; padding: 14px 24px; color: #fff; background: var(--cinza); }
+    .titulo strong { display: block; font-size: 1.15rem; }
+    .titulo span { font-size: 0.8rem; color: var(--claro); opacity: 0.85; }
+    .controles { display: flex; align-items: center; gap: 14px; margin-left: auto; }
+    .controles label { font-size: 0.85rem; color: var(--claro); }
+    select { margin-left: 6px; padding: 6px 8px; font: inherit; font-size: 0.85rem; color: var(--texto); background: var(--claro); border: 1px solid var(--borda); border-radius: 6px; }
+    .rodar { padding: 9px 20px; font: inherit; font-weight: 700; color: var(--texto); background: var(--azul); border: none; border-radius: 8px; cursor: pointer; transition: transform 0.1s ease, box-shadow 0.2s ease; }
+    .rodar:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25); }
+    .rodar:disabled { opacity: 0.6; cursor: default; }
+    .aviso { padding: 10px 24px; font-size: 0.9rem; color: var(--texto); background: var(--claro); border-bottom: 3px solid var(--azul); }
+
+    /* ---------- Painel ---------- */
+    .conteudo { max-width: 1500px; margin: 0 auto; padding: 20px 24px; }
+    .card { background: #fff; border: 1px solid var(--borda); border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(107, 114, 128, 0.12); }
+    .card h2 { margin-bottom: 12px; font-size: 0.95rem; color: var(--texto); }
+    small { font-size: 0.75rem; letter-spacing: 0.05em; text-transform: uppercase; }
+
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 14px; }
+    .kpi { border-top: 4px solid var(--cinza); }
+    .kpi.ok { border-top-color: var(--azul); }
+    .kpi.falha { border-top-color: var(--erro); }
+    .kpi b { display: block; margin-top: 6px; font-size: 2rem; color: var(--texto); font-variant-numeric: tabular-nums; }
+    .donut-card { display: flex; align-items: center; gap: 14px; }
+    .donut { width: 84px; height: 84px; flex-shrink: 0; display: grid; place-items: center; border-radius: 50%; background: var(--trilho); }
+    .donut span { width: 60px; height: 60px; display: grid; place-items: center; border-radius: 50%; background: #fff; font-weight: 700; color: var(--texto); }
+    .donut-card p { margin-top: 6px; font-size: 0.85rem; }
+
+    .progresso { margin-bottom: 18px; }
+    .linha { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 6px; font-size: 0.85rem; }
+    .barra { height: 10px; overflow: hidden; border-radius: 6px; background: var(--trilho); }
+    .barra i { display: block; width: 0; height: 100%; background: var(--azul); transition: width 0.3s ease; }
+    .barra i.com-falha { background: var(--erro); }
+    .grupo-linha { margin-bottom: 12px; }
+    .grupo-linha:last-child { margin-bottom: 0; }
+
+    /* ---------- Lista de testes ---------- */
+    .lista { max-height: 78vh; overflow-y: auto; padding-right: 4px; }
+    .grupo-titulo { margin: 16px 0 8px; font-size: 0.75rem; letter-spacing: 0.05em; text-transform: uppercase; }
+    .grupo-titulo:first-child { margin-top: 0; }
+    .teste { margin-bottom: 8px; overflow: hidden; border: 1px solid var(--borda); border-radius: 10px; }
+    .teste summary { display: flex; align-items: center; gap: 10px; padding: 10px 12px; list-style: none; cursor: pointer; font-size: 0.88rem; color: var(--texto); background: var(--claro); border-left: 4px solid var(--trilho); }
+    .teste summary::-webkit-details-marker { display: none; }
+    .teste .id { flex-shrink: 0; padding: 1px 8px; font-size: 0.75rem; border-radius: 10px; background: rgba(102, 167, 248, 0.25); }
+    .teste .dur { margin-left: auto; flex-shrink: 0; font-size: 0.78rem; color: var(--cinza); font-variant-numeric: tabular-nums; }
+    .teste.rodando { border-color: var(--azul); }
+    .teste.rodando summary, .teste.passou summary { border-left-color: var(--azul); }
+    .teste.falhou summary { border-left-color: var(--erro); background: #fdf0f2; }
+    .teste ul { list-style: none; }
+
+    .passo { display: flex; align-items: flex-start; gap: 8px; padding: 5px 12px; font-family: Consolas, "Courier New", monospace; font-size: 0.78rem; border-top: 1px solid var(--trilho); }
+    .passo .cmd { flex-shrink: 0; min-width: 52px; font-weight: 700; color: var(--texto); }
+    .passo .arg { word-break: break-word; }
+    .passo.pulado { opacity: 0.4; }
+    .passo.executando { background: rgba(102, 167, 248, 0.15); }
+    .passo.falha { background: #fdf0f2; }
+    .msg-erro { display: block; margin-top: 3px; font-weight: 600; color: var(--erro); }
+
+    .ic { flex-shrink: 0; width: 14px; text-align: center; font-weight: 700; }
+    .passou > summary .ic, .passo.ok .ic { color: var(--azul); }
+    .falhou > summary .ic, .passo.falha .ic { color: var(--erro); }
+    .executando > .ic, .rodando > summary .ic { width: 12px; height: 12px; margin-top: 2px; font-size: 0; border: 2px solid var(--trilho); border-top-color: var(--azul); border-radius: 50%; animation: gira 0.7s linear infinite; }
+    @keyframes gira { to { transform: rotate(360deg); } }
+
+    /* ---------- Navegador ---------- */
+    .barra-url { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--claro); border: 1px solid var(--borda); border-bottom: none; border-radius: 10px 10px 0 0; }
+    .bolinhas { display: flex; gap: 6px; }
+    .bolinhas i { width: 10px; height: 10px; border-radius: 50%; background: var(--cinza); opacity: 0.6; }
+    .bolinhas i:nth-child(2) { background: var(--azul); opacity: 1; }
+    .url { flex: 1; padding: 4px 12px; overflow: hidden; font-size: 0.82rem; white-space: nowrap; text-overflow: ellipsis; background: #fff; border-radius: 6px; }
+    .tela { height: 540px; display: flex; justify-content: center; overflow: hidden; background: var(--trilho); border: 1px solid var(--borda); border-radius: 0 0 10px 10px; }
+    iframe { width: 100%; height: 100%; border: none; background: #fff; transition: width 0.25s ease; }
+
+    @media (max-width: 1000px) { .painel { grid-template-columns: 1fr; } .lista { max-height: 60vh; } }
+
+    /* ---------- Layout: site em destaque + informações ao lado ---------- */
+    body { height: 100vh; display: flex; flex-direction: column; }
+    .conteudo { flex: 1; min-height: 0; max-width: none; margin: 0; width: 100%; padding: 16px 20px;
+      display: grid; grid-template-columns: minmax(0, 1fr) 430px; gap: 16px; }
+    .palco { display: flex; flex-direction: column; min-height: 0; }
+    .palco .tela { flex: 1; height: auto; min-height: 0; }
+    .lateral { display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow-y: auto; padding: 2px 4px 2px 2px; }
+    .lateral .kpis { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 0; }
+    .lateral .kpi { padding: 12px 14px; }
+    .lateral .kpi b { font-size: 1.5rem; }
+    .lateral .donut-card { grid-column: 1 / -1; }
+    .lateral .progresso { margin-bottom: 0; }
+    .lateral .lista { max-height: none; overflow: visible; padding-right: 0; }
+
+    @media (max-width: 1000px) {
+      body { height: auto; }
+      .conteudo { grid-template-columns: 1fr; }
+      .palco .tela { flex: none; height: 70vh; }
+      .lateral { overflow: visible; }
+    }
+
+    /* ---------- Tudo numa tela só (sem rolar a página) ---------- */
+    .topo { padding: 8px 20px; gap: 8px 24px; }
+    .titulo strong { font-size: 1rem; }
+    .titulo span { font-size: 0.72rem; }
+    .rodar { padding: 7px 16px; }
+    .conteudo { padding: 10px 14px; gap: 12px; grid-template-columns: minmax(0, 1fr) 400px; }
+    .palco .tela { position: relative; display: block; overflow: hidden; }
+    iframe { position: absolute; top: 0; left: 0; width: auto; height: auto; transform-origin: top left; transition: none; }
+
+    .lateral { gap: 8px; overflow: hidden; padding: 0; }
+    .lateral .kpis { grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .lateral .kpi { padding: 8px 10px; }
+    .lateral .kpi small { font-size: 0.62rem; letter-spacing: 0.02em; }
+    .lateral .kpi b { margin-top: 2px; font-size: 1.2rem; }
+    .lateral .card { padding: 10px 12px; }
+    .lateral .card h2 { margin-bottom: 8px; font-size: 0.85rem; }
+    .lateral .donut-card { gap: 12px; }
+    .lateral .donut { width: 56px; height: 56px; }
+    .lateral .donut span { width: 40px; height: 40px; font-size: 0.75rem; }
+    .lateral .grupo-linha { margin-bottom: 7px; font-size: 0.78rem; }
+    .lateral .linha { margin-bottom: 3px; font-size: 0.78rem; }
+    .lateral .casos { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+    .lateral .casos .lista { flex: 1; min-height: 0; overflow-y: auto; padding-right: 4px; }
+    .lateral .teste summary { padding: 7px 10px; font-size: 0.82rem; }
+
+    @media (max-width: 1000px) {
+      body { height: auto; }
+      .conteudo { grid-template-columns: 1fr; }
+      .palco .tela { flex: none; height: 70vh; }
+      .lateral { overflow: visible; }
+      .lateral .casos .lista { max-height: 50vh; }
+    }
+
+    /* ---------- Casos de teste maiores ---------- */
+    .conteudo { grid-template-columns: minmax(0, 1fr) 540px; }
+    .lateral #grupos { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+    .lateral .grupo-linha { margin-bottom: 0; }
+    .lateral .casos { padding: 14px 16px; }
+    .lateral .casos h2 { margin-bottom: 10px; font-size: 1rem; }
+    .lateral .teste summary { padding: 10px 12px; font-size: 0.92rem; }
+    .lateral .teste .id { font-size: 0.8rem; }
+    .lateral .passo { padding: 6px 12px; font-size: 0.82rem; }
+
+    @media (max-width: 1000px) {
+      .conteudo { grid-template-columns: 1fr; }
+      .lateral #grupos { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="topo">
+    <div class="titulo">
+      <strong>Dashboard de Testes · Calculadora Multifuncional</strong>
+      <span>simulador E2E inspirado no Cypress · executa os casos do plano de teste direto no navegador</span>
+    </div>
+    <div class="controles">
+      <label>Velocidade
+        <select id="velocidade">
+          <option value="100">Rápida</option>
+          <option value="350" selected>Normal</option>
+          <option value="900">Devagar</option>
+        </select>
+      </label>
+      <button type="button" id="btnRodar" class="rodar">▶ Rodar testes</button>
+    </div>
+  </header>
+
+  <div id="aviso" class="aviso" hidden>
+    Abra esta página pelo <strong>Live Server</strong> (clique com o botão direito no arquivo e escolha
+    "Open with Live Server"). Abrindo direto do arquivo, o navegador bloqueia o controle da aplicação.
+  </div>
+
+  <div class="conteudo">
+    <section class="palco">
+      <div class="barra-url">
+        <div class="bolinhas"><i></i><i></i><i></i></div>
+        <div id="url" class="url">about:blank</div>
+      </div>
+      <div class="tela"><iframe id="app" title="Aplicação em teste"></iframe></div>
+    </section>
+
+    <aside class="lateral">
+      <section class="kpis">
+        <div class="card kpi"><small>Total de testes</small><b id="cTotal">0</b></div>
+        <div class="card kpi ok"><small>Passaram</small><b id="cOk">0</b></div>
+        <div class="card kpi falha"><small>Falharam</small><b id="cFalha">0</b></div>
+        <div class="card kpi"><small>Tempo</small><b id="cTempo">0.0 s</b></div>
+        <div class="card donut-card">
+          <div class="donut" id="donut"><span id="cTaxa">0%</span></div>
+          <div><small>Taxa de sucesso</small><p>Pendentes: <strong id="cPend">0</strong></p></div>
+        </div>
+      </section>
+
+      <section class="card progresso">
+        <div class="linha"><small>Execução</small><small id="cProg">0 de 0</small></div>
+        <div class="barra"><i id="barraProg"></i></div>
+      </section>
+
+      <section class="card">
+        <h2>Progresso por grupo</h2>
+        <div id="grupos"></div>
+      </section>
+
+      <section class="card casos">
+        <h2>Casos de teste</h2>
+        <div id="log" class="lista" aria-label="Comandos executados"></div>
+      </section>
+    </aside>
+  </div>
+
+  <script>
+    /* =========================================================
+       Mini "runner" de testes — simula o que o Cypress faz:
+       abre a página, digita, clica e confere o resultado.
+       Este arquivo deve ficar na MESMA pasta do index.html.
+       ========================================================= */
+    const frame = document.getElementById("app");
+    const urlEl = document.getElementById("url");
+    const log = document.getElementById("log");
+    const btnRodar = document.getElementById("btnRodar");
+    const velocidade = document.getElementById("velocidade");
+
+    if (location.protocol === "file:") document.getElementById("aviso").hidden = false;
+
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    const pausa = () => sleep(Number(velocidade.value));
+    const tempoDigitar = () => (Number(velocidade.value) <= 100 ? 5 : 40);
+
+    // O site é desenhado no tamanho "de projeto" e reduzido (zoom) para caber inteiro na área,
+    // sem precisar rolar. O teste de celular usa a largura virtual de 375 px.
+    const ALTURA_BASE = 820;
+    let larguraTeste = null;
+    function ajustarEscala() {
+      const tela = frame.parentElement;
+      const w = tela.clientWidth, h = tela.clientHeight;
+      if (!w || !h) return;
+      const escala = Math.max(0.4, Math.min(1, h / ALTURA_BASE));
+      const largura = larguraTeste || w / escala;
+      frame.style.width = largura + "px";
+      frame.style.height = h / escala + "px";
+      frame.style.transform = `scale(${escala})`;
+      frame.style.left = Math.max(0, (w - largura * escala) / 2) + "px";
+    }
+    window.addEventListener("resize", ajustarEscala);
+    new ResizeObserver(ajustarEscala).observe(frame.parentElement);
+
+    const doc = () => { try { return frame.contentDocument; } catch { return null; } };
+    const win = () => { try { return frame.contentWindow; } catch { return null; } };
+
+    function atualizarUrl() {
+      try {
+        const l = frame.contentWindow.location;
+        urlEl.textContent = l.host ? l.origin + l.pathname : l.pathname;
+      } catch { /* ainda carregando */ }
+    }
+    setInterval(atualizarUrl, 200);
+
+    /* ---------- Utilitários ---------- */
+    async function esperar(fn, descricao, limite = 6000) {
+      const fim = Date.now() + limite;
+      while (Date.now() < fim) {
+        try { const r = fn(); if (r) return r; } catch { /* tenta de novo */ }
+        await sleep(50);
+      }
+      throw new Error("Tempo esgotado: " + descricao);
+    }
+
+    function achar(sel, texto) {
+      const d = doc();
+      if (!d) return null;
+      const lista = [...d.querySelectorAll(sel)];
+      return texto ? lista.find((e) => e.textContent.includes(texto)) : lista[0];
+    }
+
+    const visivel = (el) => !!el && el.getClientRects().length > 0 && !el.closest("[hidden]");
+
+    async function destacar(el) {
+      const antes = [el.style.outline, el.style.outlineOffset];
+      el.style.outline = "3px solid #f76707";
+      el.style.outlineOffset = "2px";
+      await sleep(Math.min(300, Number(velocidade.value)));
+      el.style.outline = antes[0];
+      el.style.outlineOffset = antes[1];
+    }
+
+    function textoAtual(sel) {
+      const e = achar(sel);
+      return e ? '"' + e.textContent.trim() + '"' : "(elemento não encontrado)";
+    }
+
+    /* ---------- Comandos (iguais aos do Cypress) ---------- */
+    const passo = (cmd, arg, run) => ({ cmd, arg, run });
+
+    const C = {
+      visit: (pagina) => passo("visit", pagina, async () => {
+        await new Promise((ok) => {
+          frame.addEventListener("load", ok, { once: true });
+          frame.src = pagina;
+        });
+        await esperar(() => doc() && doc().readyState === "complete", "a página carregar");
+        atualizarUrl();
+      }),
+
+      // Digita como um teclado: no campo numérico o navegador bloqueia letras
+      type: (sel, texto) => passo("type", `${sel}  "${texto}"`, async () => {
+        const el = await esperar(() => achar(sel), "encontrar " + sel);
+        await destacar(el);
+        el.focus();
+        const numerico = el.type === "number";
+        if (numerico) el.type = "text"; // permite montar "-8" ou "5.5" tecla a tecla
+        for (const ch of texto) {
+          if (!numerico || /[0-9.\-+eE]/.test(ch)) {
+            el.value += ch;
+            el.dispatchEvent(new Event("input", { bubbles: true }));
+          }
+          await sleep(tempoDigitar());
+        }
+        if (numerico) el.type = "number"; // volta ao tipo original (limpa o que não é número)
+      }),
+
+      clear: (sel) => passo("clear", sel, async () => {
+        const el = await esperar(() => achar(sel), "encontrar " + sel);
+        el.value = "";
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+      }),
+
+      select: (sel, valor, rotulo) => passo("select", `${sel}  "${rotulo || valor}"`, async () => {
+        const el = await esperar(() => achar(sel), "encontrar " + sel);
+        await destacar(el);
+        el.value = valor;
+        el.dispatchEvent(new Event("change", { bubbles: true }));
+      }),
+
+      click: (sel, texto) => passo("click", texto ? `${sel}  "${texto}"` : sel, async () => {
+        const el = await esperar(() => { const e = achar(sel, texto); return visivel(e) && e; },
+          "botão visível " + sel + (texto ? ` "${texto}"` : ""));
+        await destacar(el);
+        el.click();
+      }),
+
+      see: (sel, texto) => passo("should", texto ? `${sel} é visível e contém "${texto}"` : `${sel} é visível`,
+        () => esperar(() => visivel(achar(sel, texto)), `${sel} visível` + (texto ? ` com "${texto}"` : ""))),
+
+      haveText: (sel, texto, limite = 6000) => passo("should", `${sel} tem o texto "${texto}"`,
+        () => esperar(() => { const e = achar(sel); return e && e.textContent.trim() === texto; },
+          `${sel} com o texto "${texto}" (atual: ${textoAtual(sel)})`, limite)),
+
+      haveValue: (sel, valor) => passo("should", `${sel} tem o valor "${valor}"`,
+        () => esperar(() => { const e = achar(sel); return e && e.value === valor; },
+          `${sel} com o valor "${valor}"`, 1500)),
+
+      disabled: (sel, estado = true) => passo("should", `${sel} ${estado ? "está desativado" : "está ativado"}`,
+        () => esperar(() => { const e = achar(sel); return e && e.disabled === estado; },
+          `${sel} ${estado ? "desativado" : "ativado"}`, 1500)),
+
+      viewport: (largura) => passo("viewport", largura ? `${largura} px (celular)` : "largura total (computador)", async () => {
+        larguraTeste = largura || null; ajustarEscala();
+        await sleep(350);
+      }),
+
+      // Layout íntegro: sem rolagem horizontal e com o conteúdo dentro das caixas
+      noOverflow: () => passo("should", "layout íntegro: nada passa da largura da tela nem das caixas", () =>
+        esperar(() => {
+          const d = doc();
+          const caixa = d.querySelector(".calculadora");
+          const resultado = d.querySelector("#result");
+          return d.documentElement.scrollWidth <= d.documentElement.clientWidth &&
+                 caixa.scrollWidth <= caixa.clientWidth &&
+                 resultado.scrollWidth <= resultado.clientWidth;
+        }, "o layout estourou a largura (rolagem horizontal ou texto fora da caixa)", 1500))
+    };
+
+    /* ---------- Atalhos para montar os casos ---------- */
+    const OPS = {
+      "": "Nenhuma", add: "Adição (+)", subtract: "Subtração (-)", multiply: "Multiplicação (×)",
+      divide: "Divisão (÷)", power: "Potência (^)", sqrt: "Raiz Quadrada (√)"
+    };
+    const abrir = () => C.visit("index.html");
+    const escolher = (op) => C.select("#operation", op, OPS[op]);
+
+    // abre a página, digita os números, escolhe a operação, calcula e confere o resultado
+    const calculo = (n1, op, n2, esperado) => [
+      abrir(),
+      C.type("#num1", n1),
+      C.type("#num2", n2),
+      escolher(op),
+      C.click("#calculate"),
+      C.haveText("#result", esperado)
+    ];
+
+    /* ---------- Os testes (do plano de teste da calculadora) ---------- */
+    const G1 = "CT01 · Testes funcionais básicos (caminho feliz)";
+    const G2 = "CT02 · Regras matemáticas e tipos de dados";
+    const G3 = "CT03 · Tratamento de erros e exceções";
+    const G4 = "CT04 · Interface e comportamento (UI)";
+    const G5 = "Critérios de aceitação (item 5 do plano)";
+
+    const testes = [
+      /* ----- CT01 ----- */
+      { grupo: G1, id: "1.1", nome: "Adição de inteiros positivos (5 + 3 = 8)",
+        passos: calculo("5", "add", "3", "Resultado: 8") },
+      { grupo: G1, id: "1.2", nome: "Subtração resultando em positivo (10 - 4 = 6)",
+        passos: calculo("10", "subtract", "4", "Resultado: 6") },
+      { grupo: G1, id: "1.3", nome: "Multiplicação simples (6 × 7 = 42)",
+        passos: calculo("6", "multiply", "7", "Resultado: 42") },
+      { grupo: G1, id: "1.4", nome: "Divisão exata (20 ÷ 4 = 5)",
+        passos: calculo("20", "divide", "4", "Resultado: 5") },
+      { grupo: G1, id: "1.5", nome: "Potência (5 ^ 2 = 25)",
+        passos: calculo("5", "power", "2", "Resultado: 25") },
+      { grupo: G1, id: "1.6", nome: "Raiz quadrada (√100 = 10)",
+        passos: [
+          abrir(),
+          C.type("#num1", "100"),
+          escolher("sqrt"),
+          C.disabled("#num2"),
+          C.click("#calculate"),
+          C.haveText("#result", "Resultado: 10")
+        ] },
+
+      /* ----- CT02 ----- */
+      { grupo: G2, id: "2.1", nome: "Operações com números decimais (5.5 + 2.15 = 7.65)",
+        passos: calculo("5.5", "add", "2.15", "Resultado: 7,65") },
+      { grupo: G2, id: "2.2", nome: "Uso de números negativos (-8 × 2 = -16)",
+        passos: calculo("-8", "multiply", "2", "Resultado: -16") },
+      { grupo: G2, id: "2.3", nome: "Subtração gerando resultado negativo (3 - 10 = -7)",
+        passos: calculo("3", "subtract", "10", "Resultado: -7") },
+      { grupo: G2, id: "2.4", nome: "Divisão com dízima periódica (10 ÷ 3)",
+        passos: calculo("10", "divide", "3", "Resultado: 3,3333333333...") },
+
+      /* ----- CT03 ----- */
+      { grupo: G3, id: "3.1", nome: "Divisão por zero (15 ÷ 0)",
+        passos: calculo("15", "divide", "0", "Erro: Divisão por zero") },
+      { grupo: G3, id: "3.2", nome: "Entrada de texto bloqueada (abc + 5)",
+        passos: [
+          abrir(),
+          C.type("#num1", "abc"),
+          C.haveValue("#num1", ""),
+          C.type("#num2", "5"),
+          escolher("add"),
+          C.click("#calculate"),
+          C.haveText("#result", "Preencha todos os campos...")
+        ] },
+      { grupo: G3, id: "3.3", nome: "Campo obrigatório em branco ([vazio] × 4)",
+        passos: [
+          abrir(),
+          C.type("#num2", "4"),
+          escolher("multiply"),
+          C.click("#calculate"),
+          C.haveText("#result", "Preencha todos os campos...")
+        ] },
+      { grupo: G3, id: "3.4", nome: "Operação não selecionada (10 [Nenhuma] 10)",
+        passos: [
+          abrir(),
+          C.type("#num1", "10"),
+          C.type("#num2", "10"),
+          escolher(""),
+          C.click("#calculate"),
+          C.haveText("#result", "Alerta: Selecione uma operação")
+        ] },
+      { grupo: G3, id: "3.5", nome: "Caracteres inválidos nos dois campos",
+        passos: [
+          abrir(),
+          C.type("#num1", "abc"),
+          C.type("#num2", "xyz"),
+          C.haveValue("#num1", ""),
+          C.haveValue("#num2", ""),
+          escolher("multiply"),
+          C.click("#calculate"),
+          C.haveText("#result", "Preencha todos os campos...")
+        ] },
+
+      /* ----- CT04 ----- */
+      { grupo: G4, id: "UI.1", nome: "Botão Limpar reseta campos, operação e resultado",
+        passos: [
+          abrir(),
+          C.type("#num1", "7"),
+          C.type("#num2", "2"),
+          escolher("multiply"),
+          C.click("#calculate"),
+          C.haveText("#result", "Resultado: 14"),
+          C.click("#clear"),
+          C.haveValue("#num1", ""),
+          C.haveValue("#num2", ""),
+          C.haveValue("#operation", ""),
+          C.haveText("#result", "")
+        ] },
+      { grupo: G4, id: "UI.2", nome: "Resultado atualiza imediatamente após Calcular",
+        passos: [
+          abrir(),
+          C.type("#num1", "9"),
+          C.type("#num2", "3"),
+          escolher("divide"),
+          C.click("#calculate"),
+          C.haveText("#result", "Resultado: 3", 300),
+          C.clear("#num1"),
+          C.type("#num1", "12"),
+          C.click("#calculate"),
+          C.haveText("#result", "Resultado: 4", 300)
+        ] },
+      { grupo: G4, id: "UI.3a", nome: "Responsividade no computador (largura total)",
+        passos: [
+          abrir(),
+          C.viewport(null),
+          C.see(".calculadora"),
+          C.noOverflow(),
+          C.type("#num1", "8"),
+          C.type("#num2", "2"),
+          escolher("add"),
+          C.click("#calculate"),
+          C.haveText("#result", "Resultado: 10"),
+          C.noOverflow()
+        ] },
+      { grupo: G4, id: "UI.3b", nome: "Responsividade no celular (375 px)",
+        passos: [
+          abrir(),
+          C.viewport(375),
+          C.see(".calculadora"),
+          C.noOverflow(),
+          C.type("#num1", "8"),
+          C.type("#num2", "2"),
+          escolher("add"),
+          C.click("#calculate"),
+          C.haveText("#result", "Resultado: 10"),
+          C.noOverflow(),
+          C.viewport(null)
+        ] },
+
+      /* ----- Critérios de aceitação ----- */
+      { grupo: G5, id: "5.2", nome: "Divisão por zero não trava a aplicação",
+        passos: [
+          abrir(),
+          C.type("#num1", "15"),
+          C.type("#num2", "0"),
+          escolher("divide"),
+          C.click("#calculate"),
+          C.haveText("#result", "Erro: Divisão por zero"),
+          C.clear("#num2"),
+          C.type("#num2", "3"),
+          C.click("#calculate"),
+          C.haveText("#result", "Resultado: 5")
+        ] },
+      { grupo: G5, id: "5.3a", nome: "Layout íntegro com número grande (123456789 × 987654321)",
+        passos: [
+          abrir(),
+          C.viewport(375),
+          C.type("#num1", "123456789"),
+          C.type("#num2", "987654321"),
+          escolher("multiply"),
+          C.click("#calculate"),
+          C.see("#result", "Resultado:"),
+          C.noOverflow(),
+          C.viewport(null)
+        ] },
+      { grupo: G5, id: "5.3b", nome: "Layout íntegro com número gigante (99999999 ^ 20)",
+        passos: [
+          abrir(),
+          C.viewport(375),
+          C.type("#num1", "99999999"),
+          C.type("#num2", "20"),
+          escolher("power"),
+          C.click("#calculate"),
+          C.see("#result", "Resultado:"),
+          C.noOverflow(),
+          C.viewport(null)
+        ] }
+    ];
+
+    /* ---------- Painel ---------- */
+    const el = (id) => document.getElementById(id);
+
+    function criar(tag, classe, texto) {
+      const e = document.createElement(tag);
+      if (classe) e.className = classe;
+      if (texto) e.textContent = texto;
+      return e;
+    }
+
+    const gruposEls = {};
+
+    function montarLog() {
+      log.innerHTML = "";
+      el("grupos").innerHTML = "";
+
+      [...new Set(testes.map((t) => t.grupo))].forEach((g) => {
+        const linha = criar("div", "grupo-linha");
+        const topo = criar("div", "linha");
+        const cont = criar("b", "", "0/0");
+        const rotulo = criar("span", "", g.includes(" · ") ? g.split(" · ")[0] : "Critérios");
+        rotulo.title = g;
+        topo.append(rotulo, cont);
+        const barra = criar("div", "barra");
+        const fill = criar("i");
+        barra.append(fill);
+        linha.append(topo, barra);
+        el("grupos").append(linha);
+        gruposEls[g] = { fill, cont };
+      });
+
+      let grupoAtual = null;
+      testes.forEach((t) => {
+        t.estado = "pendente";
+        if (t.grupo !== grupoAtual) {
+          grupoAtual = t.grupo;
+          log.append(criar("h3", "grupo-titulo", grupoAtual));
+        }
+        t.bloco = criar("details", "teste");
+        const resumo = criar("summary");
+        t.icone = criar("span", "ic", "○");
+        t.duracao = criar("span", "dur", "—");
+        resumo.append(t.icone, criar("span", "id", t.id), document.createTextNode(t.nome), t.duracao);
+        const ul = criar("ul");
+        t.passos.forEach((p) => {
+          p.li = criar("li", "passo");
+          p.icone = criar("span", "ic");
+          const texto = criar("span", "arg");
+          texto.append(document.createTextNode(p.arg));
+          p.li.append(p.icone, criar("span", "cmd", p.cmd), texto);
+          p.texto = texto;
+          ul.append(p.li);
+        });
+        t.bloco.append(resumo, ul);
+        log.append(t.bloco);
+      });
+    }
+
+    function atualizarPainel() {
+      const total = testes.length;
+      const passou = testes.filter((t) => t.estado === "passou").length;
+      const falhou = testes.filter((t) => t.estado === "falhou").length;
+      const feitos = passou + falhou;
+      const pPassou = total ? (passou / total) * 100 : 0;
+      const pFalhou = total ? (falhou / total) * 100 : 0;
+
+      el("cTotal").textContent = total;
+      el("cOk").textContent = passou;
+      el("cFalha").textContent = falhou;
+      el("cPend").textContent = total - feitos;
+      el("cTaxa").textContent = (feitos ? Math.round((passou / feitos) * 100) : 0) + "%";
+      el("donut").style.background =
+        `conic-gradient(var(--azul) 0 ${pPassou}%, var(--erro) ${pPassou}% ${pPassou + pFalhou}%, var(--trilho) ${pPassou + pFalhou}% 100%)`;
+      el("cProg").textContent = `${feitos} de ${total}`;
+      el("barraProg").style.width = (total ? (feitos / total) * 100 : 0) + "%";
+      el("barraProg").classList.toggle("com-falha", falhou > 0);
+
+      Object.keys(gruposEls).forEach((g) => {
+        const lista = testes.filter((t) => t.grupo === g);
+        const ok = lista.filter((t) => t.estado === "passou").length;
+        const feitosG = lista.filter((t) => t.estado === "passou" || t.estado === "falhou").length;
+        const comFalha = lista.some((t) => t.estado === "falhou");
+        gruposEls[g].cont.textContent = `${ok}/${lista.length}`;
+        gruposEls[g].fill.style.width = (feitosG / lista.length) * 100 + "%";
+        gruposEls[g].fill.classList.toggle("com-falha", comFalha);
+      });
+    }
+
+    /* ---------- Execução ---------- */
+    let rodando = false;
+
+    async function rodar() {
+      if (rodando) return;
+      if (location.protocol === "file:") {
+        alert("Abra o simulador pelo Live Server (botão direito no arquivo > Open with Live Server). " +
+              "Abrindo direto do arquivo, o navegador impede o teste de controlar a página.");
+        return;
+      }
+      rodando = true;
+      btnRodar.disabled = true;
+      montarLog();
+      atualizarPainel();
+
+      const cTempo = el("cTempo");
+      cTempo.textContent = "0.0 s";
+      const inicio = performance.now();
+      const relogio = setInterval(() => {
+        cTempo.textContent = ((performance.now() - inicio) / 1000).toFixed(1) + " s";
+      }, 100);
+
+      for (const t of testes) {
+        larguraTeste = null; ajustarEscala(); // cada teste começa com a largura total
+        t.estado = "rodando";
+        t.bloco.classList.add("rodando");
+        t.bloco.open = true;
+        t.bloco.scrollIntoView({ block: "nearest" });
+        const inicioTeste = performance.now();
+        let quebrou = false;
+
+        for (const p of t.passos) {
+          if (quebrou) { p.li.classList.add("pulado"); continue; }
+
+          p.li.classList.add("executando");
+          p.li.scrollIntoView({ block: "nearest" });
+          try {
+            await p.run();
+            p.li.className = "passo ok";
+            p.icone.textContent = "✓";
+          } catch (erro) {
+            p.li.className = "passo falha";
+            p.icone.textContent = "✕";
+            p.texto.append(criar("span", "msg-erro", erro.message));
+            quebrou = true;
+          }
+          await pausa();
+        }
+
+        t.bloco.classList.remove("rodando");
+        t.duracao.textContent = ((performance.now() - inicioTeste) / 1000).toFixed(1) + " s";
+        if (quebrou) {
+          t.estado = "falhou";
+          t.bloco.classList.add("falhou");
+          t.icone.textContent = "✕";
+        } else {
+          t.estado = "passou";
+          t.bloco.classList.add("passou");
+          t.icone.textContent = "✓";
+          t.bloco.open = false; // recolhe os que passaram; os que falharam ficam abertos
+        }
+        atualizarPainel();
+      }
+
+      larguraTeste = null; ajustarEscala();
+      clearInterval(relogio);
+      cTempo.textContent = ((performance.now() - inicio) / 1000).toFixed(1) + " s";
+      rodando = false;
+      btnRodar.disabled = false;
+      btnRodar.textContent = "▶ Rodar de novo";
+    }
+
+    btnRodar.addEventListener("click", rodar);
+    montarLog();
+    atualizarPainel();
+    ajustarEscala();
+  </script>
+</body>
+</html>
